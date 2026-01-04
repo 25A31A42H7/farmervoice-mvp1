@@ -226,4 +226,16 @@ navigator.geolocation.getCurrentPosition(async p=>{
   document.getElementById("location").innerText = state;
 
   if(state.toLowerCase().includes("andhra") || state.toLowerCase().includes("telangana")){
-    lang = "te-I
+    lang = "te-IN";
+  } else {
+    lang = "hi-IN";
+  }
+  loadVoice();
+  document.getElementById("status").innerText = data[lang].welcome;
+  document.getElementById("harvest").innerText = data[lang].harvest;
+  speak(data[lang].welcome);
+});
+</script>
+
+</body>
+</html>
