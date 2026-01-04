@@ -57,23 +57,6 @@ main{max-width:720px;margin:auto;padding:20px;text-align:center;}
   font-weight:bold;
 }
 
-.store input{
-  width:90%;
-  padding:8px;
-  margin:5px 0;
-}
-.store button{
-  padding:10px 18px;
-  background:#2e7d32;
-  color:white;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.lang-switch{
-  margin:10px 0;
-}
 .lang-switch button{
   margin:0 5px;
   padding:6px 12px;
@@ -104,8 +87,8 @@ footer{
 
 <div class="lang-switch">
   <b>Language:</b>
-  <button onclick="manualLang('te-IN')">తెలుగు</button>
-  <button onclick="manualLang('hi-IN')">हिंदी</button>
+  <button onclick="setLang('te-IN')">తెలుగు</button>
+  <button onclick="setLang('hi-IN')">हिंदी</button>
 </div>
 
 <div class="card">
@@ -116,24 +99,10 @@ footer{
 
 <div class="grid">
   <button onclick="showInfo('crop')">Crop</button>
-  <button onclick="showInfo('market')">Market</button>
   <button onclick="showInfo('water')">Water</button>
   <button onclick="showInfo('weather')">Weather</button>
+  <button onclick="showInfo('market')">Market</button>
   <button onclick="showInfo('news')">News</button>
-</div>
-
-<div class="card">
-  <h3>🌾 Harvesting Advice</h3>
-  <div id="harvest"></div>
-</div>
-
-<div class="card store">
-  <h3>🏪 Sell Your Crop (No Middlemen)</h3>
-  <input placeholder="Crop name">
-  <input placeholder="Quantity">
-  <input placeholder="Expected price">
-  <input placeholder="Phone number">
-  <button onclick="alert('Crop listed successfully')">Post</button>
 </div>
 
 </main>
@@ -148,34 +117,44 @@ const data = {
   "te-IN": {
     welcome:"రైతు వాయిస్‌కు స్వాగతం",
     crop:"ఈ సీజన్‌కు వరి మరియు ప్రత్తి మంచి పంటలు.",
+    water:"భూగర్భ జల స్థాయి మధ్యమంగా ఉంది.",
+    weather:"ఈ రోజు వాతావరణం మోస్తరు ఎండగా ఉంది.",
     market:"టమాట ధర కిలోకు 25 రూపాయలు.",
-    water:"భూగర్భ జల స్థాయి మధ్యమంగా ఉంది. డ్రిప్ పద్ధతి ఉపయోగించండి.",
-    weather:"ఈ రోజు వాతావరణం మోస్తరు ఎండగా ఉంది. ఉష్ణోగ్రత 32 డిగ్రీలు.",
-    news:"రైతుల కోసం కొత్త ప్రభుత్వ పథకం ప్రారంభమైంది.",
-    harvest:"ఉదయం పంట కోయడం తేమ నష్టం తగ్గిస్తుంది."
+    news:"రైతుల కోసం కొత్త ప్రభుత్వ పథకం ప్రారంభమైంది."
   },
   "hi-IN": {
     welcome:"फार्मर वॉइस में आपका स्वागत है",
     crop:"इस मौसम में धान और कपास अच्छी फसलें हैं.",
+    water:"भूजल स्तर मध्यम है.",
+    weather:"आज मौसम सामान्य है.",
     market:"टमाटर 25 रुपये प्रति किलो.",
-    water:"भूजल स्तर मध्यम है. ड्रिप सिंचाई उपयोग करें.",
-    weather:"आज मौसम सामान्य है. तापमान 32 डिग्री है.",
-    news:"किसानों के लिए नई सरकारी योजना शुरू हुई है.",
-    harvest:"सुबह कटाई करने से नमी कम होती है."
+    news:"किसानों के लिए नई सरकारी योजना शुरू हुई है."
   }
 };
 
-// Voice loading (unchanged)
+/* -------- VOICE HANDLING (FINAL & STABLE) -------- */
+
 function loadVoice(){
   const voices = speechSynthesis.getVoices();
-  selectedVoice =
-    voices.find(v => v.lang === lang) ||
-    voices.find(v => v.lang.startsWith(lang.split('-')[0])) ||
-    voices[0];
+
+  // Try exact language voice
+  selectedVoice = voices.find(v => v.lang === lang);
+
+  // Try similar language
+  if(!selectedVoice){
+    selectedVoice = voices.find(v =>
+      v.lang.startsWith(lang.split("-")[0])
+    );
+  }
+
+  // Absolute fallback
+  if(!selectedVoice){
+    selectedVoice = voices[0];
+  }
 }
+
 speechSynthesis.onvoiceschanged = loadVoice;
 
-// Speak (unchanged)
 function speak(text){
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
@@ -184,21 +163,22 @@ function speak(text){
   speechSynthesis.speak(u);
 }
 
+/* -------- UI ACTIONS -------- */
+
 function showInfo(type){
   document.getElementById("status").innerText = data[lang][type];
   speak(data[lang][type]);
 }
 
-// Manual language switch (unchanged)
-function manualLang(l){
+function setLang(l){
   lang = l;
   loadVoice();
   document.getElementById("status").innerText = data[lang].welcome;
-  document.getElementById("harvest").innerText = data[lang].harvest;
   speak(data[lang].welcome);
 }
 
-// 🎤 VOICE COMMAND — FIXED (ONLY CHANGE)
+/* -------- VOICE COMMANDS (TELUGU + HINDI) -------- */
+
 document.getElementById("mic").onclick = () => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR) return alert("Voice not supported");
@@ -211,34 +191,27 @@ document.getElementById("mic").onclick = () => {
 
     if(lang === "te-IN"){
       if(t.includes("పంట")) showInfo("crop");
-      else if(t.includes("ధర") || t.includes("మార్కెట్")) showInfo("market");
-      else if(t.includes("నీరు") || t.includes("భూగర్భ")) showInfo("water");
+      else if(t.includes("నీరు")) showInfo("water");
       else if(t.includes("వాతావరణం")) showInfo("weather");
+      else if(t.includes("ధర")) showInfo("market");
       else if(t.includes("వార్త")) showInfo("news");
       else speak("పంట, నీరు లేదా వాతావరణం అని చెప్పండి");
     }
-    else if(lang === "hi-IN"){
+    else{
       if(t.includes("फसल")) showInfo("crop");
-      else if(t.includes("बाजार") || t.includes("दाम")) showInfo("market");
-      else if(t.includes("पानी") || t.includes("भूजल")) showInfo("water");
+      else if(t.includes("पानी")) showInfo("water");
       else if(t.includes("मौसम")) showInfo("weather");
+      else if(t.includes("बाजार")) showInfo("market");
       else if(t.includes("समाचार")) showInfo("news");
       else speak("कृपया फसल, पानी या मौसम कहें");
-    }
-    else{
-      if(t.includes("crop")) showInfo("crop");
-      else if(t.includes("market")) showInfo("market");
-      else if(t.includes("water")) showInfo("water");
-      else if(t.includes("weather")) showInfo("weather");
-      else if(t.includes("news")) showInfo("news");
-      else speak("Please say crop, water or weather");
     }
   };
 
   rec.start();
 };
 
-// Location (unchanged)
+/* -------- LOCATION -------- */
+
 navigator.geolocation.getCurrentPosition(async p=>{
   const res = await fetch(
     `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`
@@ -255,7 +228,6 @@ navigator.geolocation.getCurrentPosition(async p=>{
 
   loadVoice();
   document.getElementById("status").innerText = data[lang].welcome;
-  document.getElementById("harvest").innerText = data[lang].harvest;
   speak(data[lang].welcome);
 });
 </script>
