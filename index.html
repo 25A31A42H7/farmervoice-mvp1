@@ -21,9 +21,7 @@ header{
 }
 h1{font-size:20px;color:#2e7d32;margin:0;}
 #location{background:#0288d1;color:#fff;padding:5px 12px;border-radius:15px;font-size:14px;}
-
 main{max-width:700px;margin:auto;padding:20px;text-align:center;}
-
 .card{
   background:#fff;
   border-radius:14px;
@@ -31,18 +29,14 @@ main{max-width:700px;margin:auto;padding:20px;text-align:center;}
   margin-bottom:20px;
   box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
-
 #status{font-size:18px;font-weight:bold;margin-bottom:8px;}
 #sub{font-size:14px;color:#555;}
-
 .mic{
   width:90px;height:90px;border-radius:50%;
   background:linear-gradient(135deg,#2e7d32,#0288d1);
   border:none;color:white;font-size:36px;
   cursor:pointer;box-shadow:0 5px 18px rgba(0,0,0,.3);
 }
-.mic.listening{background:#d32f2f;}
-
 .grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -50,33 +44,11 @@ main{max-width:700px;margin:auto;padding:20px;text-align:center;}
   margin-top:15px;
 }
 .grid button{
-  border:none;
-  background:#fff;
-  padding:12px;
-  border-radius:10px;
-  cursor:pointer;
+  border:none;background:#fff;padding:12px;
+  border-radius:10px;cursor:pointer;
   box-shadow:0 2px 6px rgba(0,0,0,.1);
-  font-size:12px;
 }
-
-.store input{
-  width:90%;
-  padding:8px;
-  margin:5px 0;
-}
-.store button{
-  padding:10px 16px;
-  background:#2e7d32;
-  color:white;border:none;border-radius:8px;
-  cursor:pointer;
-}
-
-footer{
-  text-align:center;
-  padding:12px;
-  font-size:12px;
-  color:#666;
-}
+footer{text-align:center;padding:12px;font-size:12px;color:#666;}
 </style>
 </head>
 
@@ -90,8 +62,8 @@ footer{
 <main>
 
 <div class="card">
-  <div id="status">Welcome Farmer</div>
-  <div id="sub">Tap microphone and speak</div>
+  <div id="status">Loading…</div>
+  <div id="sub">Speak to get help</div>
 </div>
 
 <button class="mic" id="mic">🎤</button>
@@ -108,42 +80,28 @@ footer{
   <div id="harvest">Detecting location…</div>
 </div>
 
-<div class="card store">
-  <h3>🏪 Sell Your Crop</h3>
-  <input placeholder="Crop name">
-  <input placeholder="Quantity">
-  <input placeholder="Price">
-  <input placeholder="Phone number">
-  <button onclick="alert('Listing submitted!')">Post</button>
-</div>
-
 </main>
 
 <footer>Hackathon MVP – FarmerVoice</footer>
 
 <script>
-let lang="en-IN";
+let lang="hi-IN";
 
 const data={
-"en-IN":{
- crop:"Best crops now are Paddy and Cotton.",
- market:"Tomato ₹25/kg, Rice ₹1950/qtl",
- water:"Groundwater level is medium. Use drip irrigation.",
- news:"New PM Kisan installment announced.",
- harvest:"Harvest early morning to reduce moisture loss."
-},
 "te-IN":{
+ welcome:"రైతు వాయిస్‌కు స్వాగతం",
  crop:"ఈ సీజన్‌కు వరి మరియు ప్రత్తి మంచివి.",
- market:"టమాట ₹25/కేజీ, వరి ₹1950/క్వింటాల్",
+ market:"టమాట ధర ₹25/కేజీ",
  water:"భూగర్భ జల స్థాయి మధ్యమంగా ఉంది.",
- news:"ప్రధానమంత్రి కిసాన్ పథకం కొత్త విడత.",
+ news:"రైతుల కోసం కొత్త ప్రభుత్వ పథకం.",
  harvest:"ఉదయం పంట కోయడం తేమ నష్టం తగ్గిస్తుంది."
 },
 "hi-IN":{
+ welcome:"फार्मर वॉइस में आपका स्वागत है",
  crop:"इस मौसम में धान और कपास अच्छे हैं.",
- market:"टमाटर ₹25/किलो, चावल ₹1950/क्विंटल",
+ market:"टमाटर ₹25 प्रति किलो",
  water:"भूजल स्तर मध्यम है.",
- news:"पीएम किसान की नई किस्त घोषित.",
+ news:"किसानों के लिए नई सरकारी योजना.",
  harvest:"सुबह कटाई करने से नमी कम होती है."
 }
 };
@@ -157,14 +115,35 @@ function speak(text){
 
 function handle(type){
   document.getElementById("status").innerText=data[lang][type];
-  document.getElementById("sub").innerText="";
   speak(data[lang][type]);
 }
 
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-const rec=new SpeechRecognition();
+function getLangFromState(state){
+  state=state.toLowerCase();
+  if(state.includes("andhra")||state.includes("telangana")) return "te-IN";
+  return "hi-IN";
+}
+
+navigator.geolocation.getCurrentPosition(async p=>{
+  const lat=p.coords.latitude;
+  const lon=p.coords.longitude;
+
+  const res=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+  const geo=await res.json();
+  const state=geo.address.state||"India";
+
+  document.getElementById("location").innerText=state;
+  lang=getLangFromState(state);
+
+  document.getElementById("status").innerText=data[lang].welcome;
+  document.getElementById("harvest").innerText=data[lang].harvest;
+  speak(data[lang].welcome);
+});
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const rec=new SR();
 rec.onresult=e=>{
-  let t=e.results[0][0].transcript.toLowerCase();
+  const t=e.results[0][0].transcript.toLowerCase();
   if(t.includes("crop"))handle("crop");
   else if(t.includes("market"))handle("market");
   else if(t.includes("water"))handle("water");
@@ -175,14 +154,6 @@ document.getElementById("mic").onclick=()=>{
   rec.lang=lang;
   rec.start();
 };
-
-navigator.geolocation.getCurrentPosition(p=>{
-  document.getElementById("location").innerText="India";
-  lang=navigator.language.startsWith("te")?"te-IN":
-       navigator.language.startsWith("hi")?"hi-IN":"en-IN";
-  document.getElementById("harvest").innerText=data[lang].harvest;
-  speak("Welcome to FarmerVoice");
-});
 </script>
 
 </body>
