@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>FarmerVoice – Voice Enabled Smart Kisan</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FarmerVoice – Smart Kisan Assistant</title>
 
 <style>
 body{
@@ -12,66 +12,83 @@ body{
   background:linear-gradient(135deg,#e8f5e9,#e3f2fd);
 }
 header{
-  background:#fff;
-  padding:12px 18px;
+  background:#ffffff;
+  padding:12px 16px;
   display:flex;
   justify-content:space-between;
   align-items:center;
   box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
-h1{font-size:20px;color:#2e7d32;margin:0;}
-#location{background:#0288d1;color:#fff;padding:5px 12px;border-radius:15px;font-size:14px;}
+h1{margin:0;font-size:20px;color:#2e7d32;}
+#location{background:#0288d1;color:white;padding:6px 12px;border-radius:16px;font-size:13px;}
 
-main{max-width:720px;margin:auto;padding:20px;text-align:center;}
+main{
+  max-width:800px;
+  margin:auto;
+  padding:20px;
+  text-align:center;
+}
 
 .card{
-  background:#fff;
+  background:white;
   border-radius:14px;
   padding:20px;
-  margin-bottom:20px;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
+  margin-bottom:18px;
+  box-shadow:0 4px 12px rgba(0,0,0,.1);
 }
-#status{font-size:18px;font-weight:bold;margin-bottom:6px;}
+
+#output{
+  font-size:18px;
+  white-space:pre-line;
+}
 
 .mic{
-  width:90px;height:90px;border-radius:50%;
+  width:90px;
+  height:90px;
+  border-radius:50%;
   background:linear-gradient(135deg,#2e7d32,#0288d1);
-  border:none;color:white;font-size:36px;
+  border:none;
+  font-size:36px;
+  color:white;
   cursor:pointer;
   box-shadow:0 5px 18px rgba(0,0,0,.3);
 }
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:10px;
-  margin:15px 0;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-top:15px;
 }
+
 .grid button{
   border:none;
-  background:#fff;
-  padding:12px;
+  background:white;
+  padding:14px;
   border-radius:10px;
   cursor:pointer;
-  box-shadow:0 2px 6px rgba(0,0,0,.1);
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
   font-weight:bold;
 }
 
-.lang-switch button{
-  margin:0 5px;
+.lang{
+  margin-bottom:12px;
+}
+.lang button{
+  margin:4px;
   padding:6px 12px;
   border:none;
   border-radius:6px;
-  cursor:pointer;
   background:#0288d1;
-  color:#fff;
+  color:white;
+  cursor:pointer;
 }
 
 footer{
   text-align:center;
-  padding:12px;
   font-size:12px;
-  color:#666;
+  color:#555;
+  padding:10px;
 }
 </style>
 </head>
@@ -85,150 +102,126 @@ footer{
 
 <main>
 
-<div class="lang-switch">
+<div class="lang">
   <b>Language:</b>
   <button onclick="setLang('te-IN')">తెలుగు</button>
   <button onclick="setLang('hi-IN')">हिंदी</button>
 </div>
 
 <div class="card">
-  <div id="status">Loading…</div>
+  <div id="output">Loading…</div>
 </div>
 
-<button class="mic" id="mic">🎤</button>
+<button class="mic" onclick="startListening()">🎤</button>
 
 <div class="grid">
-  <button onclick="showInfo('crop')">Crop</button>
-  <button onclick="showInfo('water')">Water</button>
-  <button onclick="showInfo('weather')">Weather</button>
-  <button onclick="showInfo('market')">Market</button>
-  <button onclick="showInfo('news')">News</button>
+  <button onclick="show('crop')">🌱 Crop</button>
+  <button onclick="show('water')">💧 Water</button>
+  <button onclick="show('weather')">☀ Weather</button>
+  <button onclick="show('market')">📈 Market</button>
+  <button onclick="show('news')">📰 News</button>
+  <button onclick="show('store')">🛒 Store</button>
 </div>
 
 </main>
 
-<footer>Hackathon MVP – FarmerVoice</footer>
+<footer>Hackathon MVP – Voice Enabled Smart Crop & Market Advisor</footer>
 
 <script>
 let lang = "hi-IN";
-let selectedVoice = null;
+let voice = null;
 
-const data = {
-  "te-IN": {
+const content = {
+  "te-IN":{
     welcome:"రైతు వాయిస్‌కు స్వాగతం",
-    crop:"ఈ సీజన్‌కు వరి మరియు ప్రత్తి మంచి పంటలు.",
-    water:"భూగర్భ జల స్థాయి మధ్యమంగా ఉంది.",
-    weather:"ఈ రోజు వాతావరణం మోస్తరు ఎండగా ఉంది.",
-    market:"టమాట ధర కిలోకు 25 రూపాయలు.",
-    news:"రైతుల కోసం కొత్త ప్రభుత్వ పథకం ప్రారంభమైంది."
+    crop:"ఈ సీజన్‌కు వరి, ప్రత్తి మరియు మిరప పంటలు అనుకూలం.",
+    water:"భూగర్భ జల స్థాయి మధ్యస్థంగా ఉంది. వర్షపు నీటి సంరక్షణ చేయండి.",
+    weather:"ఈ రోజు మోస్తరు ఎండ మరియు స్వల్ప గాలి ఉంటుంది.",
+    market:"టమాట ధర ₹25/kg, వరి ₹2200/quintal.",
+    news:"రైతుల కోసం కొత్త ప్రభుత్వ సబ్సిడీ పథకం ప్రారంభమైంది.",
+    store:"🛒 రైతు స్టోర్\n\n🌾 వరి – ₹2200/quintal\n🍅 టమాట – ₹25/kg\n🥔 ఆలుగడ్డ – ₹18/kg\n\n📞 నేరుగా రైతునుంచి కొనండి\nమధ్యవర్తులు లేరు"
   },
-  "hi-IN": {
+  "hi-IN":{
     welcome:"फार्मर वॉइस में आपका स्वागत है",
-    crop:"इस मौसम में धान और कपास अच्छी फसलें हैं.",
-    water:"भूजल स्तर मध्यम है.",
-    weather:"आज मौसम सामान्य है.",
-    market:"टमाटर 25 रुपये प्रति किलो.",
-    news:"किसानों के लिए नई सरकारी योजना शुरू हुई है."
+    crop:"इस मौसम में धान, कपास और मिर्च अच्छी फसलें हैं.",
+    water:"भूजल स्तर मध्यम है। वर्षा जल संरक्षण करें.",
+    weather:"आज मौसम साफ और हल्की हवा है.",
+    market:"टमाटर ₹25/kg, धान ₹2200/quintal.",
+    news:"किसानों के लिए नई सरकारी सब्सिडी योजना शुरू हुई है.",
+    store:"🛒 किसान स्टोर\n\n🌾 धान – ₹2200/quintal\n🍅 टमाटर – ₹25/kg\n🥔 आलू – ₹18/kg\n\n📞 सीधे किसान से खरीदें\nकोई बिचौलिया नहीं"
   }
 };
 
-/* -------- VOICE HANDLING (FINAL & STABLE) -------- */
-
 function loadVoice(){
   const voices = speechSynthesis.getVoices();
-
-  // Try exact language voice
-  selectedVoice = voices.find(v => v.lang === lang);
-
-  // Try similar language
-  if(!selectedVoice){
-    selectedVoice = voices.find(v =>
-      v.lang.startsWith(lang.split("-")[0])
-    );
-  }
-
-  // Absolute fallback
-  if(!selectedVoice){
-    selectedVoice = voices[0];
-  }
+  voice = voices.find(v=>v.lang===lang) ||
+          voices.find(v=>v.lang.startsWith(lang.split("-")[0])) ||
+          voices[0];
 }
-
 speechSynthesis.onvoiceschanged = loadVoice;
 
 function speak(text){
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
-  if(selectedVoice) u.voice = selectedVoice;
+  if(voice) u.voice = voice;
   speechSynthesis.speak(u);
 }
 
-/* -------- UI ACTIONS -------- */
-
-function showInfo(type){
-  document.getElementById("status").innerText = data[lang][type];
-  speak(data[lang][type]);
+function show(type){
+  const text = content[lang][type];
+  document.getElementById("output").innerText = text;
+  speak(text);
 }
 
 function setLang(l){
   lang = l;
   loadVoice();
-  document.getElementById("status").innerText = data[lang].welcome;
-  speak(data[lang].welcome);
+  document.getElementById("output").innerText = content[lang].welcome;
+  speak(content[lang].welcome);
 }
 
-/* -------- VOICE COMMANDS (TELUGU + HINDI) -------- */
-
-document.getElementById("mic").onclick = () => {
+function startListening(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return alert("Voice not supported");
+  if(!SR){ alert("Voice not supported"); return; }
 
   const rec = new SR();
   rec.lang = lang;
 
-  rec.onresult = e => {
+  rec.onresult = e=>{
     const t = e.results[0][0].transcript.toLowerCase();
 
-    if(lang === "te-IN"){
-      if(t.includes("పంట")) showInfo("crop");
-      else if(t.includes("నీరు")) showInfo("water");
-      else if(t.includes("వాతావరణం")) showInfo("weather");
-      else if(t.includes("ధర")) showInfo("market");
-      else if(t.includes("వార్త")) showInfo("news");
-      else speak("పంట, నీరు లేదా వాతావరణం అని చెప్పండి");
-    }
-    else{
-      if(t.includes("फसल")) showInfo("crop");
-      else if(t.includes("पानी")) showInfo("water");
-      else if(t.includes("मौसम")) showInfo("weather");
-      else if(t.includes("बाजार")) showInfo("market");
-      else if(t.includes("समाचार")) showInfo("news");
-      else speak("कृपया फसल, पानी या मौसम कहें");
+    if(lang==="te-IN"){
+      if(t.includes("పంట")) show("crop");
+      else if(t.includes("నీరు")) show("water");
+      else if(t.includes("వాతావరణ")) show("weather");
+      else if(t.includes("ధర")) show("market");
+      else if(t.includes("వార్త")) show("news");
+      else show("store");
+    }else{
+      if(t.includes("फसल")) show("crop");
+      else if(t.includes("पानी")) show("water");
+      else if(t.includes("मौसम")) show("weather");
+      else if(t.includes("बाजार")) show("market");
+      else if(t.includes("समाचार")) show("news");
+      else show("store");
     }
   };
-
   rec.start();
-};
-
-/* -------- LOCATION -------- */
+}
 
 navigator.geolocation.getCurrentPosition(async p=>{
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`
-  );
-  const geo = await res.json();
-  const state = geo.address.state || "India";
+  const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`);
+  const g = await r.json();
+  const state = g.address.state || "India";
   document.getElementById("location").innerText = state;
 
   if(state.toLowerCase().includes("andhra") || state.toLowerCase().includes("telangana")){
-    lang = "te-IN";
-  } else {
-    lang = "hi-IN";
+    lang="te-IN";
   }
-
   loadVoice();
-  document.getElementById("status").innerText = data[lang].welcome;
-  speak(data[lang].welcome);
+  document.getElementById("output").innerText = content[lang].welcome;
+  speak(content[lang].welcome);
 });
 </script>
 
