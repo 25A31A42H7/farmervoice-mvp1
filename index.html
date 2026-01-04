@@ -165,21 +165,32 @@ const data = {
   }
 };
 
-// 🔊 Load proper voice
+// 🔊 FIXED VOICE LOADING (TELUGU FIRST)
 function loadVoice(){
   const voices = speechSynthesis.getVoices();
-  selectedVoice =
-    voices.find(v => v.lang === lang) ||
-    voices.find(v => v.lang.startsWith(lang.split('-')[0])) ||
-    voices[0];
+
+  selectedVoice = voices.find(v => v.lang === "te-IN");
+
+  if(!selectedVoice){
+    selectedVoice = voices.find(v => v.lang.toLowerCase().includes("te"));
+  }
+
+  if(!selectedVoice){
+    selectedVoice =
+      voices.find(v => v.lang.startsWith("hi")) ||
+      voices.find(v => v.lang.startsWith("en")) ||
+      voices[0];
+  }
 }
 speechSynthesis.onvoiceschanged = loadVoice;
 
+// 🔊 FIXED SPEAK FUNCTION
 function speak(text){
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
   if(selectedVoice) u.voice = selectedVoice;
+  console.log("Voice used:", selectedVoice?.lang || "default");
   speechSynthesis.speak(u);
 }
 
@@ -195,9 +206,13 @@ function manualLang(l){
   document.getElementById("status").innerText = data[lang].welcome;
   document.getElementById("harvest").innerText = data[lang].harvest;
   speak(data[lang].welcome);
+
+  if(lang === "te-IN" && selectedVoice && !selectedVoice.lang.includes("te")){
+    alert("⚠️ Telugu voice not installed on this device.\nTelugu text will be read using available voice.");
+  }
 }
 
-// Voice command (optional)
+// Voice command
 document.getElementById("mic").onclick = () => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR) return alert("Voice not supported");
@@ -216,7 +231,7 @@ document.getElementById("mic").onclick = () => {
   rec.start();
 };
 
-// Location (for display + auto language)
+// Location detection
 navigator.geolocation.getCurrentPosition(async p=>{
   const res = await fetch(
     `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`
@@ -230,6 +245,7 @@ navigator.geolocation.getCurrentPosition(async p=>{
   } else {
     lang = "hi-IN";
   }
+
   loadVoice();
   document.getElementById("status").innerText = data[lang].welcome;
   document.getElementById("harvest").innerText = data[lang].harvest;
