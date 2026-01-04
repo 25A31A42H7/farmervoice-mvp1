@@ -21,7 +21,9 @@ header{
 }
 h1{font-size:20px;color:#2e7d32;margin:0;}
 #location{background:#0288d1;color:#fff;padding:5px 12px;border-radius:15px;font-size:14px;}
-main{max-width:700px;margin:auto;padding:20px;text-align:center;}
+
+main{max-width:720px;margin:auto;padding:20px;text-align:center;}
+
 .card{
   background:#fff;
   border-radius:14px;
@@ -29,26 +31,65 @@ main{max-width:700px;margin:auto;padding:20px;text-align:center;}
   margin-bottom:20px;
   box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
-#status{font-size:18px;font-weight:bold;margin-bottom:8px;}
-#sub{font-size:14px;color:#555;}
+#status{font-size:18px;font-weight:bold;margin-bottom:6px;}
+
 .mic{
   width:90px;height:90px;border-radius:50%;
   background:linear-gradient(135deg,#2e7d32,#0288d1);
   border:none;color:white;font-size:36px;
-  cursor:pointer;box-shadow:0 5px 18px rgba(0,0,0,.3);
+  cursor:pointer;
+  box-shadow:0 5px 18px rgba(0,0,0,.3);
 }
+
 .grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(5,1fr);
   gap:10px;
-  margin-top:15px;
+  margin:15px 0;
 }
 .grid button{
-  border:none;background:#fff;padding:12px;
-  border-radius:10px;cursor:pointer;
+  border:none;
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  cursor:pointer;
   box-shadow:0 2px 6px rgba(0,0,0,.1);
+  font-weight:bold;
 }
-footer{text-align:center;padding:12px;font-size:12px;color:#666;}
+
+.store input{
+  width:90%;
+  padding:8px;
+  margin:5px 0;
+}
+.store button{
+  padding:10px 18px;
+  background:#2e7d32;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.lang-switch{
+  margin:10px 0;
+}
+.lang-switch button{
+  margin:0 5px;
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  background:#0288d1;
+  color:#fff;
+}
+
+footer{
+  text-align:center;
+  padding:12px;
+  font-size:12px;
+  color:#666;
+}
 </style>
 </head>
 
@@ -56,28 +97,43 @@ footer{text-align:center;padding:12px;font-size:12px;color:#666;}
 
 <header>
   <h1>FarmerVoice 🌾</h1>
-  <div id="location">Locating…</div>
+  <div id="location">Detecting…</div>
 </header>
 
 <main>
 
+<div class="lang-switch">
+  <b>Language:</b>
+  <button onclick="manualLang('te-IN')">తెలుగు</button>
+  <button onclick="manualLang('hi-IN')">हिंदी</button>
+</div>
+
 <div class="card">
   <div id="status">Loading…</div>
-  <div id="sub">Tap mic and speak</div>
 </div>
 
 <button class="mic" id="mic">🎤</button>
 
 <div class="grid">
-  <button onclick="handle('crop')">Crop</button>
-  <button onclick="handle('market')">Market</button>
-  <button onclick="handle('water')">Water</button>
-  <button onclick="handle('news')">News</button>
+  <button onclick="showInfo('crop')">Crop</button>
+  <button onclick="showInfo('market')">Market</button>
+  <button onclick="showInfo('water')">Water</button>
+  <button onclick="showInfo('weather')">Weather</button>
+  <button onclick="showInfo('news')">News</button>
 </div>
 
 <div class="card">
   <h3>🌾 Harvesting Advice</h3>
-  <div id="harvest">Detecting location…</div>
+  <div id="harvest"></div>
+</div>
+
+<div class="card store">
+  <h3>🏪 Sell Your Crop (No Middlemen)</h3>
+  <input placeholder="Crop name">
+  <input placeholder="Quantity">
+  <input placeholder="Expected price">
+  <input placeholder="Phone number">
+  <button onclick="alert('Crop listed successfully')">Post</button>
 </div>
 
 </main>
@@ -86,106 +142,88 @@ footer{text-align:center;padding:12px;font-size:12px;color:#666;}
 
 <script>
 let lang = "hi-IN";
+let selectedVoice = null;
 
 const data = {
   "te-IN": {
-    welcome: "రైతు వాయిస్‌కు స్వాగతం",
-    crop: "ఈ సీజన్‌కు వరి మరియు ప్రత్తి మంచివి.",
-    market: "టమాట ధర కిలోకు 25 రూపాయలు.",
-    water: "భూగర్భ జల స్థాయి మధ్యమంగా ఉంది.",
-    news: "రైతుల కోసం కొత్త ప్రభుత్వ పథకం.",
-    harvest: "ఉదయం పంట కోయడం తేమ నష్టం తగ్గిస్తుంది."
+    welcome:"రైతు వాయిస్‌కు స్వాగతం",
+    crop:"ఈ సీజన్‌కు వరి మరియు ప్రత్తి మంచి పంటలు.",
+    market:"టమాట ధర కిలోకు 25 రూపాయలు.",
+    water:"భూగర్భ జల స్థాయి మధ్యమంగా ఉంది. డ్రిప్ పద్ధతి ఉపయోగించండి.",
+    weather:"ఈ రోజు వాతావరణం మోస్తరు ఎండగా ఉంది. ఉష్ణోగ్రత 32 డిగ్రీలు.",
+    news:"రైతుల కోసం కొత్త ప్రభుత్వ పథకం ప్రారంభమైంది.",
+    harvest:"ఉదయం పంట కోయడం తేమ నష్టం తగ్గిస్తుంది."
   },
   "hi-IN": {
-    welcome: "फार्मर वॉइस में आपका स्वागत है",
-    crop: "इस मौसम में धान और कपास अच्छे हैं.",
-    market: "टमाटर 25 रुपये प्रति किलो.",
-    water: "भूजल स्तर मध्यम है.",
-    news: "किसानों के लिए नई सरकारी योजना.",
-    harvest: "सुबह कटाई करने से नमी कम होती है."
+    welcome:"फार्मर वॉइस में आपका स्वागत है",
+    crop:"इस मौसम में धान और कपास अच्छी फसलें हैं.",
+    market:"टमाटर 25 रुपये प्रति किलो.",
+    water:"भूजल स्तर मध्यम है. ड्रिप सिंचाई उपयोग करें.",
+    weather:"आज मौसम सामान्य है. तापमान 32 डिग्री है.",
+    news:"किसानों के लिए नई सरकारी योजना शुरू हुई है.",
+    harvest:"सुबह कटाई करने से नमी कम होती है."
   }
 };
+
+// 🔊 Load proper voice
+function loadVoice(){
+  const voices = speechSynthesis.getVoices();
+  selectedVoice =
+    voices.find(v => v.lang === lang) ||
+    voices.find(v => v.lang.startsWith(lang.split('-')[0])) ||
+    voices[0];
+}
+speechSynthesis.onvoiceschanged = loadVoice;
 
 function speak(text){
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
+  if(selectedVoice) u.voice = selectedVoice;
   speechSynthesis.speak(u);
 }
 
-function handle(type){
+function showInfo(type){
   document.getElementById("status").innerText = data[lang][type];
   speak(data[lang][type]);
 }
 
-function getLangFromState(state){
-  state = state.toLowerCase();
-  if(state.includes("andhra") || state.includes("telangana")) return "te-IN";
-  return "hi-IN";
+// Manual language switch (demo safety)
+function manualLang(l){
+  lang = l;
+  loadVoice();
+  document.getElementById("status").innerText = data[lang].welcome;
+  document.getElementById("harvest").innerText = data[lang].harvest;
+  speak(data[lang].welcome);
 }
 
-// 🎤 MIC — FIXED
+// Voice command (optional)
 document.getElementById("mic").onclick = () => {
-
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    alert("Speech recognition not supported");
-    return;
-  }
+  if(!SR) return alert("Voice not supported");
 
   const rec = new SR();
   rec.lang = lang;
-  rec.continuous = false;
-  rec.interimResults = false;
-
-  document.getElementById("status").innerText = "Listening...";
-
-  rec.onresult = (e) => {
+  rec.onresult = e => {
     const t = e.results[0][0].transcript.toLowerCase();
-
-    if(t.includes("crop")) handle("crop");
-    else if(t.includes("market")) handle("market");
-    else if(t.includes("water")) handle("water");
-    else if(t.includes("news")) handle("news");
-    else speak(lang === "te-IN" ? "దయచేసి మళ్లీ చెప్పండి" : "कृपया दोबारा बोलें");
+    if(t.includes("crop")) showInfo("crop");
+    else if(t.includes("market")) showInfo("market");
+    else if(t.includes("water")) showInfo("water");
+    else if(t.includes("weather")) showInfo("weather");
+    else if(t.includes("news")) showInfo("news");
+    else speak(lang==="te-IN"?"దయచేసి మళ్లీ చెప్పండి":"कृपया दोबारा बोलें");
   };
-
-  rec.onerror = () => {
-    document.getElementById("status").innerText = "Mic error. Try again.";
-  };
-
-  rec.onend = () => {
-    document.getElementById("status").innerText = "Tap mic and speak";
-  };
-
   rec.start();
 };
 
-// 📍 LOCATION
-navigator.geolocation.getCurrentPosition(
-  async (p) => {
-    const lat = p.coords.latitude;
-    const lon = p.coords.longitude;
+// Location (for display + auto language)
+navigator.geolocation.getCurrentPosition(async p=>{
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`
+  );
+  const geo = await res.json();
+  const state = geo.address.state || "India";
+  document.getElementById("location").innerText = state;
 
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-    );
-    const geo = await res.json();
-    const state = geo.address.state || "India";
-
-    document.getElementById("location").innerText = state;
-    lang = getLangFromState(state);
-
-    document.getElementById("status").innerText = data[lang].welcome;
-    document.getElementById("harvest").innerText = data[lang].harvest;
-    speak(data[lang].welcome);
-  },
-  () => {
-    document.getElementById("status").innerText = "Location permission needed";
-  },
-  { enableHighAccuracy:true }
-);
-</script>
-
-</body>
-</html>
+  if(state.toLowerCase().includes("andhra") || state.toLowerCase().includes("telangana")){
+    lang = "te-I
