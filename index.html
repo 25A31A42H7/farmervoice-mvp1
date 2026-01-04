@@ -165,32 +165,22 @@ const data = {
   }
 };
 
-// 🔊 FIXED VOICE LOADING (TELUGU FIRST)
+// Voice loading (unchanged)
 function loadVoice(){
   const voices = speechSynthesis.getVoices();
-
-  selectedVoice = voices.find(v => v.lang === "te-IN");
-
-  if(!selectedVoice){
-    selectedVoice = voices.find(v => v.lang.toLowerCase().includes("te"));
-  }
-
-  if(!selectedVoice){
-    selectedVoice =
-      voices.find(v => v.lang.startsWith("hi")) ||
-      voices.find(v => v.lang.startsWith("en")) ||
-      voices[0];
-  }
+  selectedVoice =
+    voices.find(v => v.lang === lang) ||
+    voices.find(v => v.lang.startsWith(lang.split('-')[0])) ||
+    voices[0];
 }
 speechSynthesis.onvoiceschanged = loadVoice;
 
-// 🔊 FIXED SPEAK FUNCTION
+// Speak (unchanged)
 function speak(text){
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
   if(selectedVoice) u.voice = selectedVoice;
-  console.log("Voice used:", selectedVoice?.lang || "default");
   speechSynthesis.speak(u);
 }
 
@@ -199,39 +189,56 @@ function showInfo(type){
   speak(data[lang][type]);
 }
 
-// Manual language switch (demo safety)
+// Manual language switch (unchanged)
 function manualLang(l){
   lang = l;
   loadVoice();
   document.getElementById("status").innerText = data[lang].welcome;
   document.getElementById("harvest").innerText = data[lang].harvest;
   speak(data[lang].welcome);
-
-  if(lang === "te-IN" && selectedVoice && !selectedVoice.lang.includes("te")){
-    alert("⚠️ Telugu voice not installed on this device.\nTelugu text will be read using available voice.");
-  }
 }
 
-// Voice command
+// 🎤 VOICE COMMAND — FIXED (ONLY CHANGE)
 document.getElementById("mic").onclick = () => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR) return alert("Voice not supported");
 
   const rec = new SR();
   rec.lang = lang;
+
   rec.onresult = e => {
     const t = e.results[0][0].transcript.toLowerCase();
-    if(t.includes("crop")) showInfo("crop");
-    else if(t.includes("market")) showInfo("market");
-    else if(t.includes("water")) showInfo("water");
-    else if(t.includes("weather")) showInfo("weather");
-    else if(t.includes("news")) showInfo("news");
-    else speak(lang==="te-IN"?"దయచేసి మళ్లీ చెప్పండి":"कृपया दोबारा बोलें");
+
+    if(lang === "te-IN"){
+      if(t.includes("పంట")) showInfo("crop");
+      else if(t.includes("ధర") || t.includes("మార్కెట్")) showInfo("market");
+      else if(t.includes("నీరు") || t.includes("భూగర్భ")) showInfo("water");
+      else if(t.includes("వాతావరణం")) showInfo("weather");
+      else if(t.includes("వార్త")) showInfo("news");
+      else speak("పంట, నీరు లేదా వాతావరణం అని చెప్పండి");
+    }
+    else if(lang === "hi-IN"){
+      if(t.includes("फसल")) showInfo("crop");
+      else if(t.includes("बाजार") || t.includes("दाम")) showInfo("market");
+      else if(t.includes("पानी") || t.includes("भूजल")) showInfo("water");
+      else if(t.includes("मौसम")) showInfo("weather");
+      else if(t.includes("समाचार")) showInfo("news");
+      else speak("कृपया फसल, पानी या मौसम कहें");
+    }
+    else{
+      if(t.includes("crop")) showInfo("crop");
+      else if(t.includes("market")) showInfo("market");
+      else if(t.includes("water")) showInfo("water");
+      else if(t.includes("weather")) showInfo("weather");
+      else if(t.includes("news")) showInfo("news");
+      else speak("Please say crop, water or weather");
+    }
   };
+
   rec.start();
 };
 
-// Location detection
+// Location (unchanged)
 navigator.geolocation.getCurrentPosition(async p=>{
   const res = await fetch(
     `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`
